@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.parse.pdf_parser import extract_text_from_pdf
 from src.parse.text_cleaner import clean_text
+from src.parse.chunker import chunk_text
 
 
 def test_pdf_parsing() -> None:
@@ -41,6 +42,23 @@ def test_pdf_parsing() -> None:
         print(cleaned_text[:500])
         print("=" * 80)
         print(f"\nTotal length: {len(cleaned_text)} characters")
+        
+        # Test chunking
+        print("\n" + "=" * 80)
+        print("Testing chunking:")
+        print("=" * 80)
+        chunks = chunk_text(cleaned_text, max_tokens=300, overlap=50)
+        print(f"Number of chunks: {len(chunks)}")
+        print(f"\nFirst chunk (first 200 chars):")
+        print("-" * 80)
+        print(chunks[0][:200] + "..." if len(chunks[0]) > 200 else chunks[0])
+        print("-" * 80)
+        if len(chunks) > 1:
+            print(f"\nSecond chunk (first 200 chars):")
+            print("-" * 80)
+            print(chunks[1][:200] + "..." if len(chunks[1]) > 200 else chunks[1])
+            print("-" * 80)
+        print(f"\nAverage chunk length: {sum(len(c) for c in chunks) / len(chunks):.0f} characters")
         
     except Exception as e:
         print(f"Error parsing PDF: {e}")
