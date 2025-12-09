@@ -27,7 +27,26 @@ def generate_page() -> None:
     st.subheader("1. Upload Document (PDF)")
     uploaded_file = st.file_uploader("Choose a PDF file", type="pdf")
 
-    if uploaded_file is not None:
+    # Check API connection
+    try:
+        response = requests.get(f"{API_BASE_URL}/", timeout=5)
+        api_available = True
+    except requests.exceptions.RequestException:
+        api_available = False
+        st.error(
+            "⚠️ **API Server is not running.**\n\n"
+            "Please start the API server first:\n"
+            "```bash\n"
+            "uvicorn src.api.app:app --reload\n"
+            "```\n"
+            "Or use:\n"
+            "```bash\n"
+            "python start_api.py\n"
+            "```\n"
+            "The API should be running on http://localhost:8000"
+        )
+
+    if uploaded_file is not None and api_available:
         if st.button("Index Document"):
             with st.spinner("Indexing document..."):
                 try:
@@ -39,9 +58,28 @@ def generate_page() -> None:
                     )
                     response.raise_for_status()
                     data = response.json()
-                    st.success(f"Document indexed successfully! ({data['chunks_count']} chunks)")
+                    st.success(f"✅ Document indexed successfully! ({data['chunks_count']} chunks)")
+                except requests.exceptions.ConnectionError:
+                    st.error(
+                        "❌ **Cannot connect to API server.**\n\n"
+                        "Please make sure the API is running on http://localhost:8000\n\n"
+                        "Start it with:\n"
+                        "```bash\n"
+                        "uvicorn src.api.app:app --reload\n"
+                        "```"
+                    )
+                except requests.exceptions.Timeout:
+                    st.error("⏱️ Request timed out. The document might be too large. Please try again.")
+                except requests.exceptions.HTTPError as e:
+                    error_detail = "Unknown error"
+                    try:
+                        error_data = e.response.json()
+                        error_detail = error_data.get("detail", str(e))
+                    except Exception:
+                        error_detail = str(e)
+                    st.error(f"❌ Error indexing document: {error_detail}")
                 except requests.exceptions.RequestException as e:
-                    st.error(f"Error indexing document: {e}")
+                    st.error(f"❌ Error indexing document: {e}")
 
     st.divider()
 
@@ -53,9 +91,23 @@ def generate_page() -> None:
         height=100,
     )
 
-    if st.button("Generate Document", type="primary"):
+    # Check API connection for generation
+    try:
+        response = requests.get(f"{API_BASE_URL}/", timeout=5)
+        api_available_gen = True
+    except requests.exceptions.RequestException:
+        api_available_gen = False
+        st.warning(
+            "⚠️ **API Server is not running.** Please start the API server first."
+        )
+
+    if st.button("Generate Document", type="primary", disabled=not api_available_gen):
         if not query:
             st.warning("Please enter a generation request.")
+            return
+
+        if not api_available_gen:
+            st.error("Cannot generate document: API server is not available.")
             return
 
         with st.spinner("Generating document..."):
@@ -103,16 +155,25 @@ def generate_page() -> None:
 
             except requests.exceptions.ConnectionError:
                 st.error(
-                    "Cannot connect to API. Please make sure the API server is running on http://localhost:8000"
+                    "❌ **Cannot connect to API server.**\n\n"
+                    "Please make sure the API is running on http://localhost:8000\n\n"
+                    "Start it with:\n"
+                    "```bash\n"
+                    "uvicorn src.api.app:app --reload\n"
+                    "```"
                 )
+            except requests.exceptions.Timeout:
+                st.error("⏱️ Request timed out. Generation might take longer. Please try again.")
+            except requests.exceptions.HTTPError as e:
+                error_detail = "Unknown error"
+                try:
+                    error_data = e.response.json()
+                    error_detail = error_data.get("detail", str(e))
+                except Exception:
+                    error_detail = str(e)
+                st.error(f"❌ Error generating document: {error_detail}")
             except requests.exceptions.RequestException as e:
-                st.error(f"Error generating document: {e}")
-                if hasattr(e, "response") and e.response is not None:
-                    try:
-                        error_detail = e.response.json()
-                        st.error(f"Details: {error_detail.get('detail', 'Unknown error')}")
-                    except Exception:
-                        pass
+                st.error(f"❌ Error generating document: {e}")
 
 
 def validate_page() -> None:
@@ -127,9 +188,23 @@ def validate_page() -> None:
         height=300,
     )
 
-    if st.button("Validate Document", type="primary"):
+    # Check API connection for validation
+    try:
+        response = requests.get(f"{API_BASE_URL}/", timeout=5)
+        api_available_val = True
+    except requests.exceptions.RequestException:
+        api_available_val = False
+        st.warning(
+            "⚠️ **API Server is not running.** Please start the API server first."
+        )
+
+    if st.button("Validate Document", type="primary", disabled=not api_available_val):
         if not text_input:
             st.warning("Please enter a document to validate.")
+            return
+
+        if not api_available_val:
+            st.error("Cannot validate document: API server is not available.")
             return
 
         with st.spinner("Validating document..."):
@@ -166,10 +241,25 @@ def validate_page() -> None:
 
             except requests.exceptions.ConnectionError:
                 st.error(
-                    "Cannot connect to API. Please make sure the API server is running on http://localhost:8000"
+                    "❌ **Cannot connect to API server.**\n\n"
+                    "Please make sure the API is running on http://localhost:8000\n\n"
+                    "Start it with:\n"
+                    "```bash\n"
+                    "uvicorn src.api.app:app --reload\n"
+                    "```"
                 )
+            except requests.exceptions.Timeout:
+                st.error("⏱️ Request timed out. Please try again.")
+            except requests.exceptions.HTTPError as e:
+                error_detail = "Unknown error"
+                try:
+                    error_data = e.response.json()
+                    error_detail = error_data.get("detail", str(e))
+                except Exception:
+                    error_detail = str(e)
+                st.error(f"❌ Error validating document: {error_detail}")
             except requests.exceptions.RequestException as e:
-                st.error(f"Error validating document: {e}")
+                st.error(f"❌ Error validating document: {e}")
 
 
 if __name__ == "__main__":

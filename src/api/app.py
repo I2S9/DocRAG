@@ -3,6 +3,7 @@
 from typing import List, Optional
 
 from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi.responses import Response
 from pydantic import BaseModel
 
 from src.embed.embedding_model import EmbeddingModel
@@ -13,6 +14,7 @@ from src.parse.chunker import chunk_text
 from src.parse.pdf_parser import extract_text_from_pdf
 from src.parse.text_cleaner import clean_text
 from src.retrieval.retriever import Retriever
+from src.utils.pdf_exporter import export_document_to_pdf, export_validation_report_to_pdf
 from src.validation.validator import validate_document
 
 app = FastAPI(title="DocRAG API", description="Technical Document Generation and Validation System")
@@ -73,6 +75,14 @@ class IndexResponse(BaseModel):
 
     message: str
     chunks_count: int
+
+
+class ExportRequest(BaseModel):
+    """Request model for PDF export."""
+
+    text: str
+    title: str = "Technical Document"
+    export_type: str = "document"  # "document" or "validation_report"
 
 
 @app.get("/")
@@ -186,4 +196,33 @@ def generate_doc(request: GenerateRequest) -> GenerateResponse:
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generating document: {str(e)}")
+
+
+@app.post("/export")
+def export_to_pdf(request: ExportRequest) -> Response:
+    """Export a document or validation report to PDF."""
+    try:
+        if request.export_type == "validation_report":
+            # Parse validation report from text (assuming JSON format)
+            import json
+            try:
+                validation_data = json.loads(request.text)
+                pdf_buffer = export_validation_report_to_pdf(validation_data, request.title)
+            except json.JSONDecodeError:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Invalid JSON format for validation report. Expected JSON string.",
+                )
+        else:
+            # Export as regular document
+            pdf_buffer = export_document_to_pdf(request.text, request.title)
+
+        return Response(
+            content=pdf_buffer.read(),
+            media_type="application/pdf",
+            headers={"Content-Disposition": f'attachment; filename="{request.title}.pdf"'},
+        )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error exporting to PDF: {str(e)}")
 
