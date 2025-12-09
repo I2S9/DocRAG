@@ -110,12 +110,12 @@ def generate_page() -> None:
             st.error("Cannot generate document: API server is not available.")
             return
 
-        with st.spinner("Generating document..."):
+        with st.spinner("Generating document... This may take several minutes..."):
             try:
                 response = requests.post(
                     f"{API_BASE_URL}/generate",
                     json={"query": query},
-                    timeout=120,
+                    timeout=300,
                 )
                 response.raise_for_status()
                 data = response.json()
@@ -163,15 +163,50 @@ def generate_page() -> None:
                     "```"
                 )
             except requests.exceptions.Timeout:
-                st.error("⏱️ Request timed out. Generation might take longer. Please try again.")
+                st.error(
+                    "⏱️ **Request timed out.**\n\n"
+                    "Generation can take several minutes. Possible causes:\n"
+                    "- Ollama model is still loading\n"
+                    "- The model is too slow for your hardware\n"
+                    "- The prompt is too long\n\n"
+                    "**Solutions:**\n"
+                    "- Wait a bit longer and try again\n"
+                    "- Use a smaller/faster model (e.g., llama3:8b instead of llama3)\n"
+                    "- Try a shorter query\n"
+                    "- Check if Ollama is running: `ollama list`"
+                )
             except requests.exceptions.HTTPError as e:
                 error_detail = "Unknown error"
+                status_code = None
                 try:
                     error_data = e.response.json()
                     error_detail = error_data.get("detail", str(e))
+                    status_code = e.response.status_code
                 except Exception:
                     error_detail = str(e)
-                st.error(f"❌ Error generating document: {error_detail}")
+                
+                if status_code == 504:
+                    st.error(
+                        f"⏱️ **Generation Timeout**\n\n"
+                        f"{error_detail}\n\n"
+                        "**Possible solutions:**\n"
+                        "- Use a smaller/faster model (e.g., `llama3:8b`)\n"
+                        "- Try a shorter query\n"
+                        "- Check if Ollama is running: `ollama list`\n"
+                        "- Wait a bit and try again"
+                    )
+                elif status_code == 503:
+                    st.error(
+                        f"❌ **Ollama Not Found**\n\n"
+                        f"{error_detail}\n\n"
+                        "**Installation:**\n"
+                        "1. Download from https://ollama.ai/\n"
+                        "2. Install and add to PATH\n"
+                        "3. Pull a model: `ollama pull llama3`\n"
+                        "4. Restart the API"
+                    )
+                else:
+                    st.error(f"❌ Error generating document: {error_detail}")
             except requests.exceptions.RequestException as e:
                 st.error(f"❌ Error generating document: {e}")
 

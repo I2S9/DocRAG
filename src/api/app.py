@@ -189,13 +189,22 @@ def generate_doc(request: GenerateRequest) -> GenerateResponse:
 
         return GenerateResponse(document=doc, validation=report)
 
-    except FileNotFoundError:
+    except FileNotFoundError as e:
         raise HTTPException(
             status_code=503,
-            detail="Ollama not found. Please install Ollama and ensure it's in your PATH.",
+            detail=f"Ollama not found: {str(e)}. Please install Ollama from https://ollama.ai/ and ensure it's in your PATH.",
+        )
+    except TimeoutError as e:
+        raise HTTPException(
+            status_code=504,
+            detail=f"Generation timed out: {str(e)}. The model might be too slow or the prompt too long. Try a shorter query.",
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error generating document: {str(e)}")
+        error_msg = str(e)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error generating document: {error_msg}",
+        )
 
 
 @app.post("/export")
