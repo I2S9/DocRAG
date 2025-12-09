@@ -34,7 +34,7 @@ def generate_page() -> None:
     except requests.exceptions.RequestException:
         api_available = False
         st.error(
-            "⚠️ **API Server is not running.**\n\n"
+            "**API Server is not running.**\n\n"
             "Please start the API server first:\n"
             "```bash\n"
             "uvicorn src.api.app:app --reload\n"
@@ -58,10 +58,10 @@ def generate_page() -> None:
                     )
                     response.raise_for_status()
                     data = response.json()
-                    st.success(f"✅ Document indexed successfully! ({data['chunks_count']} chunks)")
+                    st.success(f"Document indexed successfully! ({data['chunks_count']} chunks)")
                 except requests.exceptions.ConnectionError:
                     st.error(
-                        "❌ **Cannot connect to API server.**\n\n"
+                        "**Cannot connect to API server.**\n\n"
                         "Please make sure the API is running on http://localhost:8000\n\n"
                         "Start it with:\n"
                         "```bash\n"
@@ -69,7 +69,7 @@ def generate_page() -> None:
                         "```"
                     )
                 except requests.exceptions.Timeout:
-                    st.error("⏱️ Request timed out. The document might be too large. Please try again.")
+                    st.error("Request timed out. The document might be too large. Please try again.")
                 except requests.exceptions.HTTPError as e:
                     error_detail = "Unknown error"
                     try:
@@ -77,9 +77,9 @@ def generate_page() -> None:
                         error_detail = error_data.get("detail", str(e))
                     except Exception:
                         error_detail = str(e)
-                    st.error(f"❌ Error indexing document: {error_detail}")
+                    st.error(f"Error indexing document: {error_detail}")
                 except requests.exceptions.RequestException as e:
-                    st.error(f"❌ Error indexing document: {e}")
+                    st.error(f"Error indexing document: {e}")
 
     st.divider()
 
@@ -98,7 +98,7 @@ def generate_page() -> None:
     except requests.exceptions.RequestException:
         api_available_gen = False
         st.warning(
-            "⚠️ **API Server is not running.** Please start the API server first."
+            "**API Server is not running.** Please start the API server first."
         )
 
     if st.button("Generate Document", type="primary", disabled=not api_available_gen):
@@ -145,8 +145,7 @@ def generate_page() -> None:
                 st.write("**Section Status:**")
                 sections = validation.get("sections", {})
                 for section, present in sections.items():
-                    status = "✓" if present else "✗"
-                    color = "green" if present else "red"
+                    status = "[OK]" if present else "[MISSING]"
                     st.markdown(f"- {status} **{section}**")
 
                 # Full JSON report
@@ -155,7 +154,7 @@ def generate_page() -> None:
 
             except requests.exceptions.ConnectionError:
                 st.error(
-                    "❌ **Cannot connect to API server.**\n\n"
+                    "**Cannot connect to API server.**\n\n"
                     "Please make sure the API is running on http://localhost:8000\n\n"
                     "Start it with:\n"
                     "```bash\n"
@@ -164,7 +163,7 @@ def generate_page() -> None:
                 )
             except requests.exceptions.Timeout:
                 st.error(
-                    "⏱️ **Request timed out.**\n\n"
+                    "**Request timed out.**\n\n"
                     "Generation can take several minutes. Possible causes:\n"
                     "- Ollama model is still loading\n"
                     "- The model is too slow for your hardware\n"
@@ -187,7 +186,7 @@ def generate_page() -> None:
                 
                 if status_code == 504:
                     st.error(
-                        f"⏱️ **Generation Timeout**\n\n"
+                        f"**Generation Timeout**\n\n"
                         f"{error_detail}\n\n"
                         "**Possible solutions:**\n"
                         "- Use a smaller/faster model (e.g., `llama3:8b`)\n"
@@ -197,7 +196,7 @@ def generate_page() -> None:
                     )
                 elif status_code == 503:
                     st.error(
-                        f"❌ **Ollama Not Found**\n\n"
+                        f"**Ollama Not Found**\n\n"
                         f"{error_detail}\n\n"
                         "**Installation:**\n"
                         "1. Download from https://ollama.ai/\n"
@@ -206,9 +205,9 @@ def generate_page() -> None:
                         "4. Restart the API"
                     )
                 else:
-                    st.error(f"❌ Error generating document: {error_detail}")
+                    st.error(f"Error generating document: {error_detail}")
             except requests.exceptions.RequestException as e:
-                st.error(f"❌ Error generating document: {e}")
+                st.error(f"Error generating document: {e}")
 
 
 def validate_page() -> None:
@@ -230,7 +229,7 @@ def validate_page() -> None:
     except requests.exceptions.RequestException:
         api_available_val = False
         st.warning(
-            "⚠️ **API Server is not running.** Please start the API server first."
+            "**API Server is not running.** Please start the API server first."
         )
 
     if st.button("Validate Document", type="primary", disabled=not api_available_val):
@@ -266,8 +265,7 @@ def validate_page() -> None:
                 st.write("**Section Status:**")
                 sections = validation.get("sections", {})
                 for section, present in sections.items():
-                    status = "✓" if present else "✗"
-                    color = "green" if present else "red"
+                    status = "[OK]" if present else "[MISSING]"
                     st.markdown(f"- {status} **{section}**")
 
                 # Full JSON report
@@ -276,7 +274,7 @@ def validate_page() -> None:
 
             except requests.exceptions.ConnectionError:
                 st.error(
-                    "❌ **Cannot connect to API server.**\n\n"
+                    "**Cannot connect to API server.**\n\n"
                     "Please make sure the API is running on http://localhost:8000\n\n"
                     "Start it with:\n"
                     "```bash\n"
@@ -284,7 +282,7 @@ def validate_page() -> None:
                     "```"
                 )
             except requests.exceptions.Timeout:
-                st.error("⏱️ Request timed out. Please try again.")
+                st.error("Request timed out. Please try again.")
             except requests.exceptions.HTTPError as e:
                 error_detail = "Unknown error"
                 try:
@@ -292,9 +290,9 @@ def validate_page() -> None:
                     error_detail = error_data.get("detail", str(e))
                 except Exception:
                     error_detail = str(e)
-                st.error(f"❌ Error validating document: {error_detail}")
+                st.error(f"Error validating document: {error_detail}")
             except requests.exceptions.RequestException as e:
-                st.error(f"❌ Error validating document: {e}")
+                st.error(f"Error validating document: {e}")
 
 
 if __name__ == "__main__":

@@ -128,12 +128,11 @@ def export_validation_report_to_pdf(validation: Dict[str, Any], document_title: 
     sections = validation.get("sections", {})
     
     for section, present in sections.items():
-        status_symbol = "✓" if present else "✗"
-        status_text = "Present" if present else "Missing"
+        status_text = "[OK] Present" if present else "[MISSING] Missing"
         status_color = "green" if present else "red"
         story.append(
             Paragraph(
-                f"{status_symbol} <b>{section}:</b> <font color='{status_color}'>{status_text}</font>",
+                f"<b>{section}:</b> <font color='{status_color}'>{status_text}</font>",
                 status_style,
             )
         )
